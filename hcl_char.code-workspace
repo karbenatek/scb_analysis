@@ -25,9 +25,9 @@
 				"name": "Run analyse.py",
 				"type": "debugpy",
 				"request": "launch",
-				"program": "${workspaceFolder:hcl_char}/Analysis/20-01-26_SCBAs/analyse.py",
+				"program": "${workspaceFolder:scb_analysis}/Analysis/20-01-26_SCBAs/analyse.py",
 				"console": "integratedTerminal",
-				"cwd": "${workspaceFolder:hcl_char}/"
+				"cwd": "${workspaceFolder:scb_analysis}/"
 			}
 		]
 	}
