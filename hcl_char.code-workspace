@@ -1,0 +1,34 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "../gc_utils"
+		},
+		{
+			"path": "../supermess/from btc data python_scripts"
+		},
+		{
+			"path": "../supermess/SC-breaking/lib"
+		}
+	],
+	"settings": {
+        "python.analysis.extraPaths": [
+            "/home/tono/python-mess-organised"
+        ]
+    },
+	"launch": {
+		"version": "0.2.0",
+		"configurations": [
+			{
+				"name": "Run analyse.py",
+				"type": "debugpy",
+				"request": "launch",
+				"program": "${workspaceFolder:hcl_char}/Analysis/20-01-26_SCBAs/analyse.py",
+				"console": "integratedTerminal",
+				"cwd": "${workspaceFolder:hcl_char}/"
+			}
+		]
+	}
+}

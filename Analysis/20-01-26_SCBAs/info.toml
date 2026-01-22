@@ -1,0 +1,11 @@
+[data]
+source = "MSSCS_experiments"
+path = "20-01-26_SCBA"
+
+[plot]
+show_cfg = false
+# ignore_shims = ['L1', 'L2', 'R2', 'R3']
+
+[scb_analysis]
+# filter_threshold_mV = 5.0
+analyse_SCBAs = true

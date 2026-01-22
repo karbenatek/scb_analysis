@@ -1,0 +1,11 @@
+[data]
+source = "MSSCS_experiments"
+path = "17-11-25_HCL resistance scan"
+
+[pulse_sequence]
+t_offset = 100
+t_e = 200
+
+[plot]
+show_cfg = true
+ignore_shims = ['L1', 'L2']

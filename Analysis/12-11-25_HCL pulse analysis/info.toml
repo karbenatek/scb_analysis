@@ -1,0 +1,11 @@
+[data]
+source = "MSSCS_experiments"
+path = "5-11-25_Cooldown-HCL-pulse-responses"
+
+[pulse_sequence]
+t_offset = 100
+t_e = 200
+
+[plot]
+show_cfg = true
+ignore_shims = ['L1', 'L2']

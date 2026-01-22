@@ -1,0 +1,7 @@
+[data]
+source = "MSSCS_experiments"
+path = "18-12-25_SC breaking attempt after readout fix"
+
+[plot]
+show_cfg = false
+# ignore_shims = ['L1', 'L2', 'R2', 'R3']

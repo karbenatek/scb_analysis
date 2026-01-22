@@ -1,0 +1,7 @@
+[data]
+source = "MSSCS_experiments"
+path = "19-11-25_HCL pulse and current rampup scan"
+
+[plot]
+show_cfg = false
+# ignore_shims = ['L1', 'L2', 'R2', 'R3']

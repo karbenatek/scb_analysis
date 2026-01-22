@@ -1,0 +1,7 @@
+[data]
+source = "MSSCS_experiments"
+path = "19-01-26_SCBA"
+
+[plot]
+show_cfg = false
+# ignore_shims = ['L1', 'L2', 'R2', 'R3']
