@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-from gc_utils.parser import get_metadata
+from parser import get_metadata
 
 def parse_pulse_cfg(metadata):
   

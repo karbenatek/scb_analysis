@@ -2,7 +2,8 @@ import matplotlib.pyplot as plt
 import os
 import gc_utils.info as info
 import numpy as np
-from sc_break import  SHIM_ORDER, SHIM_CHANNELS, METADATA
+from sc_break import  SHIM_ORDER, SHIM_CHANNELS, METADATA, SHIM13_ORDER
+from sc_break.parser import get_CH_info, set_shimnames
 
 # SHIM13_ORDER = ['R1', 'R2', 'R3', 'R4', 'R5', 'R6', 'M', 'L6', 'L5', 'L4', 'L3', 'L2', 'L1']
 # SHIM_ORDER = []
@@ -150,30 +151,14 @@ def sobplot_neighbors_hs_signal(time, voltage, label=None, savepath=None):
     
     i_scs = METADATA[0]['scs']['i']
     
-    main_shims = [f'R{i_scs}', f'L{i_scs}']
-    if i_scs == 7:
-        shims_to_plot = ['R6','M','L6']
-        main_shims = ['M']
-    elif i_scs == 6:
-        shims_to_plot = ['R5','R6','M','L6','L5']
-    elif i_scs == 1:
-        shims_to_plot = ['R1','R2','L2','L1']
-    else:
-        shims_to_plot = [f'R{i_scs-1}',f'R{i_scs}',f'R{i_scs+1}',f'L{i_scs+1}',f'L{i_scs}',f'L{i_scs-1}']
-
-        
-
-
-    
+    shims_id = get_shims_and_neigbors_id(i_scs)   
+    shims_to_plot, main_shims = shims_id['shims_to_plot']['names'], shims_id['main_shims']['names']
 
     ignored_shims = plot_info.get('ignore_shims', [])
 
     for shim in SHIM_ORDER:
         if shim not in shims_to_plot:
             ignored_shims.append(shim)
-
-
-
 
     indices_to_plot = []
     for i in range(len(voltage)):
@@ -182,7 +167,7 @@ def sobplot_neighbors_hs_signal(time, voltage, label=None, savepath=None):
             continue
         indices_to_plot.append(i)
 
-    fig_signal, axes = plt.subplots(nrows=len(indices_to_plot), ncols=1, sharex=True, figsize=(6, 28), dpi=300)
+    fig_signal, axes = plt.subplots(nrows=len(indices_to_plot), ncols=1, sharex=True, figsize=(12, 28), dpi=300)
     if len(indices_to_plot) == 1:
         axes = [axes]
 
@@ -233,17 +218,9 @@ def plot_pulse_analysis(pulse_analysis, signal = None, label=None, savepath=None
     
     i_scs = METADATA[0]['scs']['i']
     
-    main_shims = [f'R{i_scs}', f'L{i_scs}']
-    if i_scs == 7:
-        shims_to_plot = ['R6','M','L6']
-        main_shims = ['M']
-    elif i_scs == 6:
-        shims_to_plot = ['R5','R6','M','L6','L5']
-    elif i_scs == 1:
-        shims_to_plot = ['R1','R2','L2','L1']
-    else:
-        shims_to_plot = [f'R{i_scs-1}',f'R{i_scs}',f'R{i_scs+1}',f'L{i_scs+1}',f'L{i_scs}',f'L{i_scs-1}']
-    
+    shims_id = get_shims_and_neigbors_id(i_scs)   
+    shims_to_plot, main_shims = shims_id['shims_to_plot']['names'], shims_id['main_shims']['names']
+    # print(f"Shims to plot: {shims_to_plot}, Main shims: {main_shims}")
     fig, ax = plt.subplots()
 
     time = pulse_analysis['pulse_time']
@@ -322,22 +299,51 @@ def plot_pulse_analysis(pulse_analysis, signal = None, label=None, savepath=None
     else:
         plt.show()
 
-def plot_signleSCS_pulse_analysis(pulse_analysis_data, channel_idx=0, label=None, savepath=None):
-    plot_info = info.read().get('plot',{})
+def plot_all_signleSCS_pulse_analysis(pulse_analysis_data, i_scs=1, label=None, savepath=None):
+    metadata = METADATA[0]
+    get_CH_info(metadata)
+    set_shimnames(metadata)
+
+
+    all_pulse_analysis_vpp_range = info.read().get('scb_analysis',{}).get('all_pulse_analysis_plot',{}).get('vpp_range', None)
+    show_error_bars = info.read().get('scb_analysis',{}).get('all_pulse_analysis_plot',{}).get('show_error_bars', True)
+
     
+    shims_id = get_shims_and_neigbors_id(i_scs)   
+    shims_to_plot, main_shims = shims_id['shims_to_plot']['names'], shims_id['main_shims']['names']
+    
+
+    if all_pulse_analysis_vpp_range is not None:
+        vpp_min, vpp_max = all_pulse_analysis_vpp_range
+        pulse_analysis_data = [d for d in pulse_analysis_data if vpp_min <= d['Vpp'] <= vpp_max]
+        
     n_channels = len(pulse_analysis_data[0]['pulses'])
-    i_R = channel_idx
-    i_L = n_channels - 1 - channel_idx
+
+    # plot main shims only
+    i_R = SHIM_ORDER.index(f'R{i_scs}') if f'R{i_scs}' in SHIM_ORDER else None
+    i_L = SHIM_ORDER.index(f'L{i_scs}') if f'L{i_scs}' in SHIM_ORDER else None
+    
     fig, (axR, axL) = plt.subplots(2, 1, figsize=(12, 8))
     for pulse_analysis in pulse_analysis_data:
         time = pulse_analysis['time']
         pulse_height = pulse_analysis['pulses'][i_R, :]
+        yerr = pulse_analysis.get('error', [None])[i_R] if 'error' in pulse_analysis else None
 
-        axR.plot(
+        line, = axR.plot(
             time*1e-3,
             pulse_height,
             label=f'Vpp={pulse_analysis["Vpp"]} V',
         )
+        if yerr is not None and show_error_bars:
+            axR.errorbar(
+                time*1e-3,
+                pulse_height,
+                yerr=yerr,
+                fmt='none',
+                capsize=3,
+                alpha=0.5,
+                color=line.get_color(),
+            )
     
     axR.set_title('Pulse Analysis (R Channel)' + (f'\n{label}' if label else ''))
     axR.set_xlabel('Time (s)')
@@ -348,12 +354,23 @@ def plot_signleSCS_pulse_analysis(pulse_analysis_data, channel_idx=0, label=None
     for pulse_analysis in pulse_analysis_data:
         time = pulse_analysis['time']
         pulse_height = pulse_analysis['pulses'][i_L, :]
+        yerr = pulse_analysis.get('error', [None])[i_L] if 'error' in pulse_analysis else None
 
-        axL.plot(
+        line, = axL.plot(
             time*1e-3,
             pulse_height,
             label=f'Vpp={pulse_analysis["Vpp"]} V',
         )
+        if yerr is not None and show_error_bars:
+            axL.errorbar(
+                time*1e-3,
+                pulse_height,
+                yerr=yerr,
+                fmt='none',
+                capsize=3,
+                alpha=0.5,
+                color=line.get_color(),
+            )
     
     axL.set_title('Pulse Analysis (L Channel)' + (f'\n{label}' if label else ''))
     axL.set_xlabel('Time (s)')
@@ -363,6 +380,83 @@ def plot_signleSCS_pulse_analysis(pulse_analysis_data, channel_idx=0, label=None
     
     fig.tight_layout()
     
+    if savepath:
+        fig.savefig(savepath)
+        print(f"Plot saved to {os.path.abspath(savepath)}")
+    else:
+        plt.show()
+
+def get_shims_and_neigbors_id(i_scs, n_shims=13):
+    """
+    Get list of shims to plot based on the main SCS index.
+    
+    Parameters:
+    - i_scs: int, index of the main SCS (1-indexed)
+    - n_shims: int, total number of shims (default 13)
+    
+    Returns:
+    - list of shim names to plot
+    """
+    
+
+    middle_idx = n_shims // 2 + 1
+    if n_shims % 2 == 0: # even number of shims call parameter error 
+        raise ValueError("n_shims must be an odd number.")
+    
+    main_shims = [f'R{i_scs}', f'L{i_scs}'] 
+
+    if i_scs == middle_idx:  # Main shim is middle
+        shims_to_plot = [f'R{middle_idx}', 'M', f'L{middle_idx}']
+        main_shims = ['M']
+    elif i_scs == 1:
+        shims_to_plot = [f'R1', f'R2', f'L2', f'L1']
+    elif i_scs == int(n_shims/2): # Main shim is next to middle
+        shims_to_plot = [f'R{middle_idx-2}', f'R{middle_idx-1}', 'M', f'L{middle_idx-1}', f'L{middle_idx-2}']
+    else:
+        shims_to_plot = [f'R{i_scs-1}', f'R{i_scs}', f'R{i_scs+1}', f'L{i_scs+1}', f'L{i_scs}', f'L{i_scs-1}']
+    
+    return {'main_shims':{'names': main_shims, 'channels': 0}, 'shims_to_plot':{'names': shims_to_plot, 'channels': 0}}
+
+
+
+def plot_pulse_edge_analysis(pulse_edge_analysis, label=None, savepath=None):    
+    i_scs = METADATA[0]['scs']['i']
+    # print(pulse_edge_analysis['voltage_chunks'][0])
+    n_ch = len(pulse_edge_analysis['voltage_chunks'][0][0])
+    print(n_ch)
+    fig, axs = plt.subplots(n_ch ,1, sharex=True, figsize=(8, 4*n_ch), dpi=200)
+
+    time_chunks = pulse_edge_analysis['time_chunks']
+    voltage_chunks = pulse_edge_analysis['voltage_chunks']
+
+    for i in range(n_ch):
+        for j, time in enumerate(time_chunks):    
+            voltage = voltage_chunks[j][:,i]
+            axs[i].plot(
+                time[:]*1e-3,
+                voltage,
+                alpha=0.7,
+                # label=SHIM_ORDER[i],
+                # color=SHIM_COLORS[i % len(SHIM_COLORS)],
+            )
+            axs[i].set_ylabel(f'Voltage (ms)')
+            axs[i].grid()
+            axs[i].text(
+                0.02,
+                0.98,
+                SHIM_ORDER[i],
+                transform=axs[i].transAxes,
+                fontsize=9,
+                verticalalignment='top',
+                bbox=dict(boxstyle='round', facecolor='white', alpha=0.5)
+            )
+        if i < n_ch - 2:
+            axs[i].set_xticklabels([])
+
+    axs[0].set_title('Pulse Edge Analysis' + (f'\n{label}' if label else ''))
+    axs[-1].set_xlabel('Time (s)')
+    # axs[-1].legend(loc='upper right')
+    fig.tight_layout()
     if savepath:
         fig.savefig(savepath)
         print(f"Plot saved to {os.path.abspath(savepath)}")

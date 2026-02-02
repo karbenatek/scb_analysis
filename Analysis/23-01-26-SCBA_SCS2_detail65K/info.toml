@@ -1,0 +1,12 @@
+[data]
+source = "MSSCS_experiments"
+path = "23-01-26-SCBA_SCS2_detail65K"
+
+[plot]
+show_cfg = false
+# ignore_shims = ['L1', 'L2', 'R2', 'R3']
+
+[scb_analysis]
+# filter_threshold_mV = 5.0
+analyse_SCBAs = false
+all_pulse_analysis_vpp_range = [4.2, 4.5]

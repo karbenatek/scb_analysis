@@ -25,10 +25,13 @@
 				"name": "Run analyse.py",
 				"type": "debugpy",
 				"request": "launch",
-				"program": "${workspaceFolder:scb_analysis}/Analysis/20-01-26_SCBAs/analyse.py",
+				"program": "${workspaceFolder:scb_analysis}/Analysis/29-01-26_SCBA_SCS7_detail65K/analyse.py",
 				"console": "integratedTerminal",
-				"cwd": "${workspaceFolder:scb_analysis}/"
+				"cwd": "${workspaceFolder:scb_analysis}/",
+				"env": {"PYTHONPATH": "/home/tono/python-mess-organised"},
+				"justMyCode": true
 			}
 		]
+		
 	}
 }
