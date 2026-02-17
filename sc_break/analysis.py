@@ -14,7 +14,7 @@ def analyse_scba(filepath, label=None, doc_format='png'):
     # plot_info = info.read().get('plot',{})
 
     steps_to_skip = info.read().get('scb_analysis',{}).get('steps_to_skip', ['plot_hs_signal'])
-
+    # filepath = os.path.abspath(filepath).replace('\\','/')
 
     reset_shimnames()
     # check if doc_format is valid
@@ -33,6 +33,11 @@ def analyse_scba(filepath, label=None, doc_format='png'):
     flabel = f'SCS={SCSinfo['i']}_VPP={SCSinfo['Vpp']}'
 
     # make directory for specific SCS and it's plot categories
+    splited = filepath.split(os.sep)
+    if len(splited) > 2:
+        splited.remove(splited[-2])
+    filepath = os.sep.join(splited)
+
     SCS_savedir = os.path.join(os.path.dirname(filepath), f"SCS{SCSinfo['i']}")
     signal_all_savedir = os.path.join(SCS_savedir, 'signal_all')
     os.makedirs(signal_all_savedir, exist_ok=True)
@@ -102,7 +107,6 @@ def analyse_scba_indir(dirpath, out_doc_format='png'):
             analyse_scba(file, doc_format= out_doc_format)
 
             try:
-                import matplotlib.pyplot as plt
                 plt.close('all')  # close all open figures
             except Exception:
                 pass
@@ -120,6 +124,7 @@ def analyse_pulses(
     ):
     metadata = METADATA[0]
     HCLinfo = get_HCL_info(metadata)
+    SCSinfo = get_SCS_info(metadata)
     # exit()
     ignore_before_t0 = info.read().get('scb_analysis',{}).get('ignore_before_t0', False)
     margin_frac = info.read().get('scb_analysis',{}).get('pulse_crop_margin_frac', margin_frac)
@@ -128,6 +133,9 @@ def analyse_pulses(
     threshold_abs = info.read().get('scb_analysis',{}).get('pulse_threshold_abs', threshold_abs)
     t_u = HCLinfo['u']*1e3
     t_d = HCLinfo['d']*1e3
+    warmup_time = SCSinfo.get('h', 0)*1e3
+    cooldown_time = SCSinfo.get('c', 0)*1e3
+
     # Separate samples by periodic idle (t_d) and pulse (t_u) phases.
     time = np.asarray(time)
     voltage = np.asarray(voltage)
@@ -188,10 +196,11 @@ def analyse_pulses(
 
         
         pulse_n_mask = (phase_n >= t_d + margin_pulse) & (phase_n < period - margin_pulse)
+        pulse_n_mask0 = pulse_n_mask.copy()
         pulse_n_mask_ch = np.tile(pulse_n_mask[:, np.newaxis], (1, n_ch))
 
 
-        if not idle_n_mask.any() or not pulse_n_mask.any() or (ignore_before_t0 and np.all(t_n < 0)):
+        if not idle_n_mask.any() or not pulse_n_mask.any() or (ignore_before_t0 and np.all(t_n < 0)) or np.any(t_n > (warmup_time + cooldown_time)):
             continue
         
         idle_v_n = v_n[idle_n_mask, :]
@@ -228,13 +237,15 @@ def analyse_pulses(
             # if threshold_abs is not None:
             pulse_n_mask_ch[:,ch] &= (v_n[:,ch] > threshold)# & (pulse_voltages_ch > threshold_abs)
 
-            # subtract pedestal from pulse values
-            pulse_values[ch] = np.mean(v_n[:,ch][pulse_n_mask_ch[:,ch]] - fit_values[pulse_n_mask_ch[:,ch]])
 
             if all(~pulse_n_mask_ch[:,ch]):
-                # if all pulse points are filtered out, skip this channel
-                pulse_n_mask = np.zeros_like(pulse_n_mask, dtype=bool)
-                continue
+                # if all pulse points are filtered out, use original 
+                pulse_n_mask = pulse_n_mask0.copy()
+                pulse_n_mask_ch[:,ch] = pulse_n_mask0.copy()
+
+            # subtract pedestal from pulse values
+            pulse_values[ch] = np.mean(v_n[:,ch][pulse_n_mask_ch[:,ch]] - fit_values[pulse_n_mask_ch[:,ch]])
+                # continue
 
             # pulse_n_mask &= (pulse_voltages_ch > threshold)
 
@@ -248,14 +259,15 @@ def analyse_pulses(
         #     plt.plot(idle_times_ch, idle_voltages_ch, 'o', label='Idle Data')
         #     plt.plot(t_n, fit_values, '-', label='fit')
         #     plt.plot(idle_times_ch, poly_fit(idle_times_ch) + threshold_std*std_residuals, '-', label='upper')
-        #     plt.plot(pulse_times_ch, pulse_voltages_ch, 'x', label='pulse Data')
+        #     plt.plot(t_n[pulse_n_mask0], v_n_ch[pulse_n_mask0], 'x', label='pulse Data')
         #     plt.plot(t_n[pulse_n_mask_ch[:,ch]], v_n[:,ch][pulse_n_mask_ch[:,ch]], 'g.', label='pulse Data over threshold')
         #     plt.plot(t_n, threshold, label='pulse Data')
 
         # plt.show()
 
-        if not np.any(pulse_n_mask):
-            continue
+        # if not np.any(pulse_n_mask):
+        #     continue
+
         # Update global masks
         idle_mask[cyc_idx[idle_n_mask]] = True
         pulse_mask[cyc_idx[pulse_n_mask]] = True
@@ -386,7 +398,11 @@ def plot_all_pulse_analyses(dirpath, out_doc_format='png'):
     vpp0, vpp1 = None, None
     vpp_range = info.read().get('scb_analysis',{}).get('all_pulse_analysis_plot',{}).get('vpp_range', None)
     index_range_to_analyse = info.read().get('scb_analysis',{}).get('index_range_to_analyse', [None, None])
-
+    
+    splited = dirpath.split(os.sep)
+    if len(splited) > 2:
+        splited.remove(splited[-2])
+    dirpath = os.sep.join(splited)
 
     # get SCS directories
     scs_dirs = [os.path.join(dirpath, d) for d in os.listdir(dirpath) if os.path.isdir(os.path.join(dirpath, d)) and d.startswith('SCS')]
@@ -398,7 +414,7 @@ def plot_all_pulse_analyses(dirpath, out_doc_format='png'):
         # get files in directory
         files = os.listdir(pulse_analysis_dir)
         # filter .csv
-        files = [f for f in files if f.endswith('.csv')]
+        files = [f for f in files if f.endswith('.csv')][index_range_to_analyse[0]:index_range_to_analyse[1]]
         
         i_SCS = int(scs_dir.split('SCS')[-1])
 
@@ -466,5 +482,5 @@ def plot_all_pulse_analyses(dirpath, out_doc_format='png'):
         else:
             vpp0, vpp1 = pulse_analysis_data[0]['Vpp'], pulse_analysis_data[-1]['Vpp']
 
-        plot_all_signleSCS_pulse_analysis(pulse_analysis_data, i_scs=int(i_SCS), label=f'SCS={i_SCS}', savepath=os.path.join(pulse_analysis_dir, f'VPP={vpp0}-{vpp1}_all_pulse_analysis.{out_doc_format}'))
+        plot_all_signleSCS_pulse_analysis(pulse_analysis_data, i_scs=int(i_SCS), label=f'SCS={i_SCS}', savedir=pulse_analysis_dir)
 

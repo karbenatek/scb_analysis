@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
-from parser import get_metadata
+from parser import get_metadata, get_header
+import gc_utils.info as info
 
 def parse_pulse_cfg(metadata):
   
@@ -26,13 +27,13 @@ def get_hcl_pulse_data(filepath):
     
     time = df.iloc[:, 0].to_numpy()
     voltage = df.iloc[:, 1:n_ch+1].to_numpy().transpose()
-    metadata = get_metadata(df)
+    metadata = get_metadata(header = get_header(filepath))
     cfg = parse_pulse_cfg(metadata['pulses'])
     
     return time, voltage, cfg, metadata
 
 def read_pulse_sequence_info():
-    info = read_info()
+    info = info.read()
     if not info or 'pulse_sequence' not in info:
         print("❌ No pulse sequence info found.")
         return None

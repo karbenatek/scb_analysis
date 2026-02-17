@@ -62,3 +62,8 @@ def get_metadata(header):
 
         metadata[key] = value
     return metadata
+
+def get_header(filepath):
+    with open(filepath) as f:
+            header = f.readline()
+    return header

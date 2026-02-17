@@ -3,12 +3,14 @@ from hcl_pulse.plotter import plot_hcl_pulses, plot_hcl_pulses_signal
 import os
 import numpy as np
 import gc_utils.info as info
+import matplotlib.pyplot as plt
 
 
 def sequence_analysis(filepath, label=None):
     # get filename
     print("Pulse sequence analysis on file:", filepath)
-    ps_info = info.read().get('pulse_sequence', { 't_offset': 0, 't_e': 0 })
+    ps_info = info.read().get('pulse_sequence', {})
+    # ps_info = info.read().get('pulse_sequence', { 't_offset': 0, 't_e': 0 })
     
     
     filename = os.path.basename(filepath)
@@ -18,7 +20,7 @@ def sequence_analysis(filepath, label=None):
         label = metadata.get('T', '')
         if label[-1] != 'K': label += 'K'
         
-    time += ps_info['t_offset']
+    time = time + ps_info.get('t_offset', 0)
     
     # print("Analysis info:", info)
     high_time = cfg['u']
@@ -26,7 +28,7 @@ def sequence_analysis(filepath, label=None):
     
     sequence = cfg['pulse_sequence']
     n_pulses = len(sequence)
-    t_e = ps_info['t_e']
+    t_e = ps_info.get('t_e', 0)
     
     intervals = []
     pulse_height = []
@@ -62,7 +64,7 @@ def sequence_analysis(filepath, label=None):
     plot_hcl_pulses_signal(time, voltage, cfg, intervals=intervals, savepath=filepath.replace('.csv', '_signal.png'), label=label)
     plot_hcl_pulses(sequence, pulse_height, pulse_error, cfg, savepath=filepath.replace('.csv', '_pulses.png'), label=label)
     
-def sequence_analysis_indir(dirpath):
+def sequence_analysis_indir(dirpath, show=False):
     # get files in directory
     files = os.listdir(dirpath)
     # filter .csv
@@ -73,3 +75,6 @@ def sequence_analysis_indir(dirpath):
     for file in files:
         # make a plot
         sequence_analysis(file)
+        if show:
+            plt.show()
+            plt.close()
