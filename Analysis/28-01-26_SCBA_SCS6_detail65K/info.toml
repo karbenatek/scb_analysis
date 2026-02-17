@@ -8,9 +8,9 @@ show_cfg = false
 
 [scb_analysis]
 # filter_threshold_mV = 5.0
-analyse_SCBAs = false
-ignore_before_t0 = false
+# analyse_SCBAs = false
+# ignore_before_t0 = false
 # pulse_crop_margin_frac = {idle: 0.05, pulse: 0.05}
 [scb_analysis.all_pulse_analysis_plot]
-vpp_range = [3.8, 4.5]
+vpp_range = [3.8, 5]
 show_error_bars = false

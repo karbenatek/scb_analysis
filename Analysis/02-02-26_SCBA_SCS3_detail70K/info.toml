@@ -1,6 +1,6 @@
 [data]
 source = "MSSCS_experiments"
-path = "29-01-26_SCBA_SCS7_detail65K"
+path = "02-02-26_SCBA_SCS3_detail70K"
 
 [plot]
 show_cfg = false

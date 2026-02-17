@@ -1,0 +1,12 @@
+[[mounts]]
+source_name = "MSSCS_experiments"
+remote_path = "09-02-26_HS-MUX_comparison"
+mount_path = ''
+
+[plot]
+show_cfg = false
+# ignore_shims = ['L1', 'L2', 'R2', 'R3']
+
+[pulse_sequence]
+t_e = 100
+t_offset = 100

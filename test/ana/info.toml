@@ -1,7 +1,3 @@
-[data]
-source = "MSSCS_experiments"
-path = "23-01-26-SCBA_SCS2_detail65K"
-
 [plot]
 show_cfg = false
 # ignore_shims = ['L1', 'L2', 'R2', 'R3']
@@ -9,8 +5,8 @@ show_cfg = false
 [scb_analysis]
 # filter_threshold_mV = 5.0
 analyse_SCBAs = false
-ignore_before_t0 = true
-
-
+# ignore_before_t0 = false
+# index_range_to_analyse = [0,1]
 [scb_analysis.all_pulse_analysis_plot]
-vpp_range = [3.9, 5]
+# vpp_range = [3, 5]
+

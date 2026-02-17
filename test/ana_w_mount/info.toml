@@ -1,0 +1,23 @@
+[[mounts]]
+source_name = "MSSCS_experiments"
+remote_path = "04-02-26_SCBA_SCS134_72.5K"
+mount_path = 'hellooo'
+[[mounts]]
+source_name = "MSSCS_experiments"
+remote_path = "04-02-26_SCBA_SCS134_72.5K"
+mount_path = 'hellooo2'
+
+
+
+[plot]
+show_cfg = false
+# ignore_shims = ['L1', 'L2', 'R2', 'R3']
+
+[scb_analysis]
+# filter_threshold_mV = 5.0
+analyse_SCBAs = false
+# ignore_before_t0 = false
+# index_range_to_analyse = [0,1]
+[scb_analysis.all_pulse_analysis_plot]
+# vpp_range = [3, 5]
+

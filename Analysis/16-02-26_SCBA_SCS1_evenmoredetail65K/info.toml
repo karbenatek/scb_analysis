@@ -1,0 +1,10 @@
+[[mounts]]
+source_name = "MSSCS_experiments"
+remote_path = "16-02-26_SCBA_SCS1_evenmoredetail65K"
+mount_path = ''
+
+[plot]
+show_cfg = false
+# ignore_shims = ['L1', 'L2', 'R2', 'R3']
+[scb_analysis]
+analyse_SCBAs = false

@@ -1,6 +1,7 @@
-[data]
-source = "MSSCS_experiments"
-path = "29-01-26_SCBA_SCS7_detail65K"
+[[mounts]]
+source_name = "MSSCS_experiments"
+remote_path = "06-02-26_SCBA_SCS13_75K"
+mount_path = ''
 
 [plot]
 show_cfg = false
