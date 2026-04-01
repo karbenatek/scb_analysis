@@ -118,8 +118,12 @@ def set_shimnames(metadata):
         for i_daq, chans in enumerate(channels):
             for chan in chans:
                 # get index of channel
-                i_chan = SHIM_CHANNELS[i_daq].index(chan)
-                shim_order.append(shim_selection[i_daq][i_chan])
+                if chan in SHIM_CHANNELS[i_daq]:
+                    i_chan = SHIM_CHANNELS[i_daq].index(chan)
+                    shim_order.append(shim_selection[i_daq][i_chan])
+                else:
+                    i_chan = -1
+                    shim_order.append("U")
 
         for i,shim_name in enumerate(shim_order):
 

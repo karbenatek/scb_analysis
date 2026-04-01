@@ -327,7 +327,9 @@ def plot_all_signleSCS_pulse_analysis(pulse_analysis_data, i_scs=1, label=None, 
         pulse_analysis_data = [d for d in pulse_analysis_data if vpp0 <= d['Vpp'] <= vpp1]
         
     
-    fig_main, axs = plt.subplots(len(main_shims), 1, figsize=(12, 2 + 3*len(main_shims)), dpi=150, sharex=True)
+    fig_main, axs = plt.subplots(len(main_shims), 1, figsize=(10,1 + 3*len(main_shims)), dpi=150, sharex=True)
+    fig_main.subplots_adjust(right=0.85)
+
     if len(main_shims) == 1:
         axs = [axs]
     for ax, shim in zip(axs, main_shims):
@@ -359,15 +361,15 @@ def plot_all_signleSCS_pulse_analysis(pulse_analysis_data, i_scs=1, label=None, 
                 )
         if shim == main_shims[0]:
             ax.set_title('Pulse Analysis' + f'\nShim {shim}')
+            ax.legend(loc='upper left', bbox_to_anchor=(1.01, 1))
         else:
             ax.set_title(f'Shim {shim}')
             
-        ax.set_xlabel('Time (s)')
         ax.set_ylabel('Pulse Height (mV)')
-        ax.legend(loc='upper right')
         ax.grid()
+    ax.set_xlabel('Time (s)')
     
-    fig_main.tight_layout()
+    # fig_main.tight_layout()
     
     if savedir:
         # os.path.join(pulse_analysis_dir, f'_pulse_analysis.{out_doc_format}'
@@ -379,7 +381,8 @@ def plot_all_signleSCS_pulse_analysis(pulse_analysis_data, i_scs=1, label=None, 
 
 
     # Put everything to one figure
-    fig_all, axs = plt.subplots(len(shim_order), 1, figsize=(12, 2 + 3*len(shim_order)), dpi=150, sharex=True)
+    fig_all, axs = plt.subplots(len(shim_order), 1, figsize=(10, 3*len(shim_order)), dpi=150, sharex=True)
+    fig_all.subplots_adjust(right=0.85)
     for i_chan, shim in enumerate(shim_order):
         ax = axs[i_chan]
         for pulse_analysis in pulse_analysis_data:
@@ -407,13 +410,14 @@ def plot_all_signleSCS_pulse_analysis(pulse_analysis_data, i_scs=1, label=None, 
                     alpha=0.5,
                     color=line.get_color(),
                 )
-        if shim == shim_order[-1]: ax.set_xlabel('Time (s)')
 
         ax.set_title(f'Shim {shim}')
         ax.set_ylabel('Pulse Height (mV)')
-        ax.legend(loc='upper right')
+        if i_chan == 0: ax.legend(loc='upper left', bbox_to_anchor=(1.01, 1))
         ax.grid()
-    fig_all.tight_layout()
+    ax.set_xlabel('Time (s)')
+    
+    # fig_all.tight_layout()
     if savepath:
         savepath = os.path.join(savedir, f'SCS={i_scs}_VPP={vpp0}-{vpp1}_pulse_analysis_all.{out_doc_format}')
 
