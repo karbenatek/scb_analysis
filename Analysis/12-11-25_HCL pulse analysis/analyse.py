@@ -6,10 +6,10 @@ import gc_utils.info as info
 # from hcl_pulse.plotter import plot_hcl_pulses
 
 measurements = {
-    '50K': 'data/50K/',
-    '100K': 'data/100K/',
-    '150K': 'data/150K/',
-    'room temp': 'data/room temp/'}
+    '50K': 'mount/50K/',
+    '100K': 'mount/100K/',
+    '150K': 'mount/150K/',
+    'room temp': 'mount/room temp/'}
 
 # print(this_dir)
 

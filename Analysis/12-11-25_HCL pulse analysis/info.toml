@@ -1,6 +1,12 @@
-[data]
-source = "MSSCS_experiments"
-path = "5-11-25_Cooldown-HCL-pulse-responses"
+# [data]
+# source = "MSSCS_experiments"
+# path = "5-11-25_Cooldown-HCL-pulse-responses"
+
+[[mounts]]
+source_name = "MSSCS_experiments"
+remote_path = "5-11-25_Cooldown-HCL-pulse-responses"
+mount_path = ''
+
 
 [pulse_sequence]
 t_offset = 100

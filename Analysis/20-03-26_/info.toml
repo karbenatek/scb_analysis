@@ -1,0 +1,17 @@
+[[mounts]]
+source_name = "MSSCS_experiments"
+remote_path = "20-03-26_test at 75K"
+mount_path = 'blah1'
+
+[[mounts]]
+source_name = "MSSCS_experiments"
+remote_path = "19-03-26_Close-up"
+mount_path = 'blah2'
+
+[plot]
+show_cfg = false
+# ignore_shims = ['L1', 'L2', 'R2', 'R3']
+
+[pulse_sequence]
+t_e = 100
+t_offset = 100

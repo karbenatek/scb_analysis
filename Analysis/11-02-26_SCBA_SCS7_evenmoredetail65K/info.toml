@@ -6,3 +6,5 @@ mount_path = ''
 [plot]
 show_cfg = false
 # ignore_shims = ['L1', 'L2', 'R2', 'R3']
+[scb_analysis]
+analyse_SCBAs = false

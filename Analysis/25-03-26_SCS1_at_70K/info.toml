@@ -1,12 +1,7 @@
-# [data]
-# source = "MSSCS_experiments"
-# path = "03-02-26_SCBA_SCS1_detail70K"
-
 [[mounts]]
 source_name = "MSSCS_experiments"
-remote_path = "03-02-26_SCBA_SCS1_detail70K"
+remote_path = "25-03-26_SCS1_at_70K"
 mount_path = ''
-
 
 [plot]
 show_cfg = false
@@ -17,6 +12,10 @@ show_cfg = false
 # analyse_SCBAs = false
 ignore_before_t0 = false
 # pulse_crop_margin_frac = {idle: 0.05, pulse: 0.05}
+plot_pulses = true
+# index_range_to_analyse = [20, 65]
+
+
 [scb_analysis.all_pulse_analysis_plot]
-# vpp_range = [3.8, 4.5]
+# vpp_range = [3, 5]
 # show_error_bars = false

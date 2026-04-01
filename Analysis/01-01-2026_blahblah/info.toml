@@ -1,0 +1,11 @@
+mounts = [
+    { source_name = "MSSCS_experiments", remote_path = "01-01-2026_blahblah", mount_path = "" },
+]
+
+[plot]
+show_cfg = false
+
+[scb_analysis]
+ignore_before_t0 = false
+
+[scb_analysis.all_pulse_analysis_plot]
