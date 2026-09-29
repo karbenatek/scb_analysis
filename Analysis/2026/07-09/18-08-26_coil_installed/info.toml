@@ -1,6 +1,6 @@
 [[mounts]]
 source_name = "MSSCS_experiments"
-remote_path = "11-06-26_pumping_current_scan"
+remote_path = "18-08-26_coil_installed"
 mount_path = ''
 
 

@@ -1,8 +1,7 @@
 [[mounts]]
 source_name = "MSSCS_experiments"
-remote_path = "11-06-26_pumping_current_scan"
+remote_path = "02-09-26_coil_v2"
 mount_path = ''
-
 
 
 [plot]
@@ -26,3 +25,6 @@ steps_to_skip = ['pulse_sanity', 'rising_edge_intervals', 'falling_edge_interval
 [stages]
 shim1_recovery_time = 5
 shim2_recovery_time = 15
+
+[rep_analysis]
+time_range = [0, 100]

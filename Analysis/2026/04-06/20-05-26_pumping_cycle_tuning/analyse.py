@@ -9,5 +9,5 @@ from sc_break.analysis import find_and_analyse_scs_profiles, analyse_scs_profile
 
 # for i in  range(3, 4):
     # find_and_analyse_scs_profiles(f'mount/tuning0{i}', doc_format='png')
-find_and_analyse_scs_profiles('mount/per_25/', doc_format='png')
+find_and_analyse_scs_profiles('mount/', doc_format='png')
 # analyse_scs_profile('mount/scan3/HS_reading_time=21-05-26_15-54-00.csv', doc_format='png')
