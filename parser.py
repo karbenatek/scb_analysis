@@ -1,3 +1,5 @@
+import json
+
 def get_metadata(header):
     # header = df.columns.tolist()
     
@@ -10,8 +12,24 @@ def get_metadata(header):
     # connect embeded arrays
     # parse metadata
     s_metadata = header
-    s_metadata = s_metadata.split("metadata=[")[1]
-    s_metadata = s_metadata[:-2]
+    
+    
+    s_metadata = s_metadata.split("metadata=")[1]
+    s_metadata = s_metadata[:-1]
+
+    # if s_metadata is valid JSON, return it directly
+    try:
+        parsed = json.loads(s_metadata)
+        if isinstance(parsed, dict):
+            # rename SCS profiles to SCS stages
+            if 'SCS profiles' in parsed:
+                parsed['SCS stages'] = parsed.pop('SCS profiles')
+
+            return parsed
+
+    except json.JSONDecodeError:
+        pass
+    s_metadata = s_metadata[1:-1]
     # s_metadata = s_metadata[s_metadata.index("metadata=[")+1 : s_metadata.index("]")]
     # split into key=value pairs
     # s_metadata = s_metadata.split(",")
@@ -67,3 +85,6 @@ def get_header(filepath):
     with open(filepath) as f:
             header = f.readline()
     return header
+
+
+
