@@ -1416,7 +1416,7 @@ def plot_flux_decay(t_decay, v_decay_flush_difference, vrms_decay_flush_differen
     else:
         plt.show()
 
-def plot_averaged_rep_stage_pulses(meas_results, savepath=None, legend_content = ['I_p']):
+def plot_averaged_rep_stage_pulses(meas_results, savepath=None):
     # get profiles that do not have corresponding HS signal in the data
     time_range = info.read().get('rep_analysis',{}).get('time_range', [])
     
@@ -1450,25 +1450,77 @@ def plot_averaged_rep_stage_pulses(meas_results, savepath=None, legend_content =
     n_plots =  len(shims_to_plot)
     n_meas = len(meas_results)
 
-    PC_current = []
-    HCL_current = []
+    meas_pars = {
+    'PC_current': [],
+    'HCL_current': [],
+    'Vpp': [],
+    'PC_regime': [],
+    'HCL_regime': [],
+    }
     for result in meas_results:
         metadata = result.get('metadata', {})
-        # PC_current.append(metadata.get('PC current', None))
-        try:
-            PC_current.append(metadata['SCS stages'][0]['Pumping coil operation points'][0]['HCL state']['Current'] * 1e3)
-        except (KeyError, IndexError, TypeError):
-            PC_current.append(None)
-        # HCL_current.append(metadata.get('HCL current', None))
-        try:
-            HCL_current.append(metadata['SCS stages'][0]['HCL operation points'][0]['HCL state']['Current'] * 1e3)
-        except (KeyError, IndexError, TypeError):
-            HCL_current.append(None)
 
+        try:
+            meas_pars['PC_regime'].append(metadata['SCS stages'][0]['Pumping coil operation points'][0]['HCL state']['Regime'])
+            if meas_pars['PC_regime'][-1] != 'idle':
+                meas_pars['PC_current'].append(metadata['SCS stages'][0]['Pumping coil operation points'][0]['HCL state']['Current'] * 1e3)
+            else:
+                meas_pars['PC_current'].append(None)
 
-    # RAW SIGNAL PLOTTING
+        except (KeyError, IndexError, TypeError):
+            meas_pars['PC_current'].append(None)
+        
+        try:
+            meas_pars['HCL_regime'].append(metadata['SCS stages'][0]['HCL operation points'][0]['HCL state']['Regime'])
+            if meas_pars['HCL_regime'][-1] != 'idle':
+                meas_pars['HCL_current'].append(metadata['SCS stages'][0]['HCL operation points'][0]['HCL state']['Current'] * 1e3)
+            else:
+                meas_pars['HCL_current'].append(None)
+        except (KeyError, IndexError, TypeError):
+            meas_pars['HCL_current'].append(None)
+        meas_pars['Vpp'].append(metadata['SCS stages'][0]['Vpp (V)'])
+
+    sort_order = sorted(
+        range(len(meas_results)),
+        key=lambda i: tuple(
+            (meas_pars[key][i] is None, meas_pars[key][i])
+            for key in meas_pars
+        ),
+    )
+    meas_results = [meas_results[i] for i in sort_order]
+    meas_pars = {
+        key: [values[i] for i in sort_order]
+        for key, values in meas_pars.items()
+    }
+
+    legend_content = {}
+    static_pars = {}
+    # check for parameters that change between measurements and add them to legend_content
+    for key, values in meas_pars.items():
+        if len(set(values)) > 1:
+
+            if key in ['PC_current', 'HCL_current']: key = 'I_p' # exception for current
+            legend_content[key] = values
+        else:
+            static_pars[key] = values[0]
+
     fig, ax = subplots(n_plots, 1, sharex=True, figsize=(10, 3*n_plots), dpi=150)
+    
     if n_plots == 1: ax = [ax]
+
+    if static_pars:
+        fig.subplots_adjust(right=0.8)
+        static_text = "\n".join(
+            f"{key} = {value}" for key, value in static_pars.items()
+        )
+        fig.text(
+            0.975,
+            0.5,
+            static_text,
+            ha='center',
+            va='center',
+            bbox=dict(boxstyle='round', facecolor='white', edgecolor='black', alpha=0.8),
+        )
 
 
 
@@ -1482,17 +1534,15 @@ def plot_averaged_rep_stage_pulses(meas_results, savepath=None, legend_content =
                 i_ch = SHIM_ORDER.index(name)
                 legend_text = ""
 
-                if "I_p" in legend_content:
-                    if None not in PC_current:
-                        I_p = PC_current[i_meas]
+                for key, values in legend_content.items():
+                    if key == 'I_p':
+                        legend_text += f"I_p = {values[i_meas]:.0f} mA\n"
+                    elif key == 'Vpp':
+                        legend_text += f"Vpp = {values[i_meas]:.1f} V\n"
                     else:
-                        I_p = HCL_current[i_meas]
-                    
-                    # I_p = metadata['SCS stages'][0]['HCL operation points'][0]['HCL state']['Current']*1e3
+                        legend_text += f"{key} = {values[i_meas]}\n"
 
-                    # I_p = metadata['SCS stages'][0]['Pumping coil operation points'][0]['HCL state']['Current']*1e3
-
-                    legend_text += f"I_p = {I_p:.0f} mA"
+                legend_text = legend_text[:-1] # get rid of \n
 
                 pulse_time = result['pulse_time']
                 pulse_height_avg = result['pulse_height_avg']
@@ -1557,12 +1607,36 @@ def plot_averaged_rep_stage_pulses(meas_results, savepath=None, legend_content =
     ax[-1].set_xlabel('Time (s)')
     if legend_content:
         ax[0].legend(loc='upper left', bbox_to_anchor=(1.15, 1.0), borderaxespad=0)
-        fig.tight_layout(rect=[0, 0, 0.95, 1])
+        # fig.tight_layout(rect=[0, 0, .95, 1])
     else:
-        fig.tight_layout()
+        # fig.tight_layout()
+        pass
 
     if savepath:
         fig.savefig(savepath, bbox_inches='tight')
+        print(f"Plot saved to {os.path.abspath(savepath)}")
+    else:
+        plt.show()
+
+def plot_pulse_height_histogram(pulse_analysis, savepath=None):
+
+    pulse_height = pulse_analysis['pulse_height']
+    
+    n_ch = pulse_height.shape[1]
+    fig, axs = subplots(n_ch, 1, figsize=(10, 2*n_ch), sharex=True)
+    if n_ch == 1: axs = [axs]
+
+    for i_ch in range(n_ch):
+        axs[i_ch].hist(pulse_height[:,i_ch], bins=30, alpha=0.7)
+        axs[i_ch].set_ylabel('Counts')
+        axs[i_ch].set_title(f'Pulse height histogram - {SHIM_ORDER[i_ch]}')
+        axs[i_ch].grid()
+
+    axs[-1].set_xlabel('Pulse height (mV)')
+    fig.tight_layout()
+
+    if savepath:
+        fig.savefig(savepath)
         print(f"Plot saved to {os.path.abspath(savepath)}")
     else:
         plt.show()

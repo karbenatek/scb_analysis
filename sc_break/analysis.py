@@ -1,5 +1,5 @@
 from sc_break.parser import get_hs_data, set_shimnames, reset_shimnames, get_HCL_info, get_SCS_info, save_pulse_analysis_data, read_pulse_analysis_data, parse_SCS_profiles_from_stage
-from sc_break.plotter import plot_averaged_rep_stage_pulses, plot_flux_decay, plot_pumping_vs_hcl_current, plot_SCS_profile_pulse_analysis, plot_SCS_profile_sliced, plot_SCS_profile_with_repetitions, plot_SCS_profiles, plot_flux_pumping, plot_hs_signal, plot_pulse_sanity, subplot_hs_signal, sobplot_neighbors_hs_signal, plot_pulse_analysis, plot_all_signleSCS_pulse_analysis, plot_pulse_edge_analysis
+from sc_break.plotter import plot_pulse_height_histogram, plot_averaged_rep_stage_pulses, plot_flux_decay, plot_pumping_vs_hcl_current, plot_SCS_profile_pulse_analysis, plot_SCS_profile_sliced, plot_SCS_profile_with_repetitions, plot_SCS_profiles, plot_flux_pumping, plot_hs_signal, plot_pulse_sanity, subplot_hs_signal, sobplot_neighbors_hs_signal, plot_pulse_analysis, plot_all_signleSCS_pulse_analysis, plot_pulse_edge_analysis
 from sc_break import *
 # from sc_break import  SHIM_ORDER, SHIM_CHANNELS, SHIM13_ORDER, METADATA
 from matplotlib import pyplot as plt
@@ -826,22 +826,32 @@ def stage_pulse_analysis(SCS_stage):
     v = SCS_stage['v'].copy()
     t_shift = SCS_stage['t_shift']
     HCL_ops = SCS_stage['HCL operation points']
-    n_op = len(HCL_ops)
-    for i_op, op in enumerate(HCL_ops):
-        if op['HCL state']['Regime'] == 'pulsing':
-            t_u = op['HCL state']['Pulse timing']['up time']*1e3
-            t_d = op['HCL state']['Pulse timing']['down time']*1e3
-            if i_op == n_op-1:
-                interval_mask = t_refd >= op['Time (s)']
-            else:
-                interval_mask = np.array(t_refd >= op['Time (s)']) & np.array(t_refd < HCL_ops[i_op + 1]['Time (s)'])
+    # Pumping coil operation points
+    Pumping_coil_ops = SCS_stage['Pumping coil operation points']
+    # TODO: preselect which ops are we analysing 
+    # all_ops = HCL_ops + Pumping_coil_ops
+    stage_current_controll_operation_points = [HCL_ops, Pumping_coil_ops]
 
-            _t = t[interval_mask]
-            _v = v[interval_mask]
+
+    # n_op = len(all_ops)
+    for ops in stage_current_controll_operation_points:
+        for i_op, op in enumerate(ops):
+            if op['HCL state']['Regime'] == 'pulsing':
+                t_u = op['HCL state']['Pulse timing']['up time']*1e3
+                t_d = op['HCL state']['Pulse timing']['down time']*1e3
                 
+                if i_op == len(ops)-1:
+                    interval_mask = t_refd >= op['Time (s)']
+                else:
+                    # this is case for multiple pulsing ops 
+                    interval_mask = np.array(t_refd >= op['Time (s)']) & np.array(t_refd < ops[i_op + 1]['Time (s)'])
 
-            pulse_analysis = analyse_pulses(_t, _v, t_u,t_d, pedestal_fit_order=0)
-            op['pulse_analysis'] = pulse_analysis.copy()
+                _t = t[interval_mask]
+                _v = v[interval_mask]
+                    
+
+                pulse_analysis = analyse_pulses(_t, _v, t_u,t_d, pedestal_fit_order=0)
+                op['pulse_analysis'] = pulse_analysis.copy()
             # plt.subplot(3,1,1)
             # plt.plot(pulse_analysis['pulse_time'], pulse_analysis['pulse_height'])
             # plt.subplot(3,1,2)
@@ -901,7 +911,18 @@ def analyse_pumping_cycle_scan(SCS_stages, shims_to_plot = []):
         if stage['Name'] in ['fpc_tuning', 'single_scs_pulse']:
             for key, item in parse_SCS_profiles_from_stage(stage).items():
                 parsed_fp_tuning_profiles['norm'][key] = item
-            pulse_analysis = stage['HCL operation points'][0]['pulse_analysis']
+            
+            stage_current_controll_operation_points = [
+                stage.get('HCL operation points', None),
+                stage.get('Pumping coil operation points', None),
+                                    
+            ]
+            for sop in stage_current_controll_operation_points:
+                pulse_analysis = sop[0].get('pulse_analysis', False)
+                if pulse_analysis:
+                    break
+
+            
             t = stage['t'].copy()
             v = stage['v'].copy()
 
@@ -935,8 +956,13 @@ def analyse_stages(filepath, shims_to_plot = [], doc_format='png', plot=True):
     stages_list = [item['Name'] for item in SCS_stages]
 
     if 'fpc_tuning' in stages_list or 'single_scs_pulse' in stages_list:
-        if plot:        
-            plot_SCS_profile_with_repetitions(*analyse_pumping_cycle_scan(SCS_stages), savepath= fname+f'_fpc_scan.{doc_format}')
+        if plot:
+            cycle_analysis = analyse_pumping_cycle_scan(SCS_stages)
+            scb_analysis = analyse_scb(SCS_stages)
+            t,v,parsed_fp_tuning_profiles,pulse_analysis = cycle_analysis # TODO: make plot_SCS_profile_with_repetitions to figure out these values from SCS_stages
+            plot_pulse_height_histogram(pulse_analysis, savepath=fname+f'_pulse_height_histogram.{doc_format}')
+            plot_SCS_profile_with_repetitions(*cycle_analysis, savepath= fname+f'_fpc_scan.{doc_format}')
+
         else: 
             analyse_pumping_cycle_scan(SCS_stages)
     if 'fp' in stages_list:
@@ -1034,9 +1060,22 @@ def get_rep_stage_pulse_analysis_averaged(filepath):
 
     # n_ch = pulse_analysis['pulse_height'].shape[1]
     SCS_stage = SCS_stages[0]
-    pulse_analysis = SCS_stage['HCL operation points'][0]['pulse_analysis']
-    SCS_profile_period = get_SCS_profile_period(SCS_stage['SCS profiles'])
+    
 
+    stage_current_controll_operation_points = [
+        SCS_stage.get('HCL operation points', None),
+        SCS_stage.get('Pumping coil operation points', None),                            
+    ]
+
+    for sop in stage_current_controll_operation_points:
+        pulse_analysis = sop[0].get('pulse_analysis', False)
+        if pulse_analysis:
+            break
+    
+    # pulse_analysis = SCS_stage['HCL operation points'][0]['pulse_analysis']
+    # pulse_analysis_histogram = get_pulse_analysis_histogram(pulse_analysis, bins=50)
+    
+    SCS_profile_period = get_SCS_profile_period(SCS_stage['SCS profiles'])
     pulse_time = pulse_analysis['pulse_time']
     pulse_height = pulse_analysis['pulse_height']
 
@@ -1105,3 +1144,39 @@ def analyse_rep_pulses(dirpaths, doc_format='png', rewrite=False):
 # results = []
 # for file in files:
 #     pulse_time, pulse_height_avg, pulse_height_std, SCS_profiles, metadata = get_rep_stage_pulse_analysis_averaged(file)
+def analyse_scb(SCS_stages):
+    SCS_stage = SCS_stages[0]
+    stage_current_controll_operation_points = [
+        SCS_stage.get('HCL operation points', None),
+        SCS_stage.get('Pumping coil operation points', None),                            
+    ]
+
+    for sop in stage_current_controll_operation_points:
+        pulse_analysis = sop[0].get('pulse_analysis', False)
+        if pulse_analysis:
+            break
+
+    pulse_analysis_histogram = get_pulse_analysis_histogram(pulse_analysis, bins=50)
+    
+    return pulse_analysis_histogram
+
+
+def get_pulse_analysis_histogram(pulse_analysis, bins=50):
+    # pulse_analysis = SCS_stage['HCL operation points'][0]['pulse_analysis']
+    
+    
+    pulse_height = pulse_analysis['pulse_height']
+    pulse_time = pulse_analysis['pulse_time']
+
+    # flatten pulse height and time
+    pulse_height_flat = pulse_height.flatten()
+    pulse_time_flat = np.tile(pulse_time, (pulse_height.shape[1], 1)).T.flatten()
+
+    # remove NaN values
+    mask = ~np.isnan(pulse_height_flat)
+    pulse_height_flat = pulse_height_flat[mask]
+    pulse_time_flat = pulse_time_flat[mask]
+
+    hist, bin_edges = np.histogram(pulse_height_flat, bins=bins)
+    
+    return hist, bin_edges, pulse_time_flat, pulse_height_flat
